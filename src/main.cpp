@@ -146,8 +146,13 @@ void VocabBuilder::createVocab() {
         trainingDescriptors.push_back(descriptors);
 
     }
+    // borrowed from https://github.com/goruck/bow/blob/master/src/bow-classification.cpp
+    int clusterSize = 1000;
+    int attempts = 3;
+    int flags = cv::KMEANS_RANDOM_CENTERS;
+    TermCriteria terminate_criterion(TermCriteria::EPS | TermCriteria::COUNT, 10, 1.0);
 
-    BOWKMeansTrainer bowTrainer(1000);
+    BOWKMeansTrainer bowTrainer = BOWKMeansTrainer(clusterSize, terminate_criterion, attempts, flags);
     cout << "Clustering ... \n";
     Mat vocabulary = bowTrainer.cluster(trainingDescriptors);
     origVocab = vocabulary;
@@ -277,11 +282,12 @@ void VocabBuilder::testSVM() {
       // Load Audio File
       sox_format_t *input = openAudio(inputVideoPath.c_str());
 
-      size_t period = 1; // make this a param
+      size_t period = 4; // make this a param
       sox_signalinfo_t signalInfo = input->signal;
       sox_rate_t sampleRate = signalInfo.rate;
       sox_uint64_t length = signalInfo.length;
-      size_t sampleSize = sampleRate * period;
+      size_t sampleSize = (sampleRate * period);
+
       size_t samplesTrimmed = 0;
 
       size_t bufferSize = sampleSize * sizeof(sox_sample_t);
@@ -293,7 +299,6 @@ void VocabBuilder::testSVM() {
       frame = imread(specPath);
       //writer.open("spectrogram_animation.mp4", fourcc, 1.0, frame.size());
       while (samplesTrimmed < length) {
-        cout << length / sampleRate << endl;
         string start = to_string(samplesTrimmed / sampleRate); // seconds
         string end = to_string((samplesTrimmed / sampleRate) + period);
         end.insert(0,"=");
@@ -311,9 +316,9 @@ void VocabBuilder::testSVM() {
             string className = (*iterator).first;
             const char* svmPath = (*iterator).second.c_str();
             Ptr<SVM> svm = Algorithm::load<SVM>(svmPath);
-            int result = svm->predict(responseHist);
-
-            cout << "Class: " << className << " Result : " << result << endl;
+            Mat results;
+            int result = svm->predict(responseHist, results, true);
+            cout << "Class: " << className << " Result : " << results.at<float>(0,0) << endl;
 
         }
         //writer.write(frame);
