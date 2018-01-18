@@ -1,0 +1,8 @@
+cmake_minimum_required(VERSION 2.6)
+project (AudioClassifier)
+find_package(OpenCV REQUIRED)
+add_executable(AudioClassifier ${PROJECT_SOURCE_DIR}/src/main.cpp)
+target_link_libraries(AudioClassifier ${OpenCV_LIBS} boost_system boost_filesystem  boost_program_options boost_serialization sox)
+if(UNIX)
+		 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall -std=c++11 -lstdc++ -lm")
+endif()
