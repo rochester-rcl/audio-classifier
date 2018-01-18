@@ -38,6 +38,9 @@
 #include <boost/serialization/map.hpp>
 #include <boost/archive/text_iarchive.hpp>
 #include <boost/archive/text_oarchive.hpp>
+#include <boost/uuid/uuid.hpp>
+#include <boost/uuid/uuid_generators.hpp>
+#include <boost/uuid/uuid_io.hpp>
 #include "sox.h"
 
 
@@ -49,6 +52,7 @@ using namespace boost::filesystem;
 using namespace boost::program_options;
 using namespace boost::serialization;
 using namespace boost::archive;
+using namespace boost::uuids;
 
 extern "C" {
 
@@ -83,7 +87,8 @@ extern "C" {
     spectrogramPath.insert(0,"-o");
     args[0] = const_cast<char *>("-r");
     args[1] = const_cast<char *>(spectrogramPath.c_str());
-    assert(sox_effect_options(effect, 2, args) == SOX_SUCCESS);
+    args[2] = const_cast<char *>("-x 1024");
+    assert(sox_effect_options(effect, 3, args) == SOX_SUCCESS);
     assert(sox_add_effect(chain, effect, &inCopy->signal, &inCopy->signal) == SOX_SUCCESS);
     free(effect);
 
@@ -156,6 +161,7 @@ class VocabBuilder {
         static string getClassFromPath(string filePath);
         static vector<string> getTestFiles(string filePath);
         static void getSpectrogram(string filePath);
+        static int trainingSetFromAudio(string audioFile, string outFolder, float sampleLength);
 
         //Non-static
         void listFiles(string directory);
@@ -164,6 +170,7 @@ class VocabBuilder {
         void SVM2File();
         void testSVM();
         void createTrainingData();
+        void loadVocabFile(FileStorage vocabFile);
 
 
 };
