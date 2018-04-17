@@ -189,7 +189,6 @@ void VocabBuilder::createVocab() {
     cout << "Clustering ... \n";
     Mat vocabulary = bowTrainer.cluster(trainingDescriptors);
     origVocab = vocabulary;
-
     cout << "Vocabulary Created \n";
 
 }
@@ -279,12 +278,13 @@ void VocabBuilder::createTrainingData(){
 
         string classifierFilename = absPath + "/" + class_ + "_train.xml";
         const char* toCString = classifierFilename.c_str();
+        cout << classifierFilename << endl;
         classifier[class_]->save(toCString);
         cout << "Training Done for " << classifierFilename << " - saved xml" << endl;
         svmLabelMappings.insert(pair<string, string>(class_, classifierFilename));
 
     }
-
+    // add path to vocab too so we can have 2 params in main instead of 3
     ofstream of(absPath + "/svmLabels.txt");
     text_oarchive txtOut(of);
     txtOut << svmLabelMappings;
