@@ -48,7 +48,6 @@ int VocabBuilder::trainingSetFromAudio(string audioFile, string outFolder, float
     sox_signalinfo_t signalInfo = input->signal;
     sox_rate_t sampleRate = signalInfo.rate;
     sox_uint64_t length = signalInfo.length;
-    cout << sampleLength << endl;
     size_t sampleSize = (sampleLength > 1.0) ? (sampleRate * period) * sampleLength : (sampleRate * period) / (1.0f / sampleLength);
 
     size_t samplesTrimmed = 0;
@@ -167,7 +166,7 @@ void VocabBuilder::createVocab() {
     vector<KeyPoint> keypoints;
     Mat descriptors;
     Mat trainingDescriptors(1, extractor->descriptorSize(), extractor->descriptorType());
-    Ptr<SURF> detector = SURF::create(400);
+    Ptr<SURF> detector = SURF::create(1000);
 
     cout << "Building vocabulary.\n";
 
@@ -242,7 +241,6 @@ void VocabBuilder::createTrainingData(){
 
     for (map<string, Mat>::iterator iterator = classTrainingData.begin(); iterator != classTrainingData.end(); ++iterator){
         string class_ = (*iterator).first;
-
         Mat samples(0, responseHist.cols, responseHist.type());
         Mat labels(0,1,CV_32S);
         samples.push_back(classTrainingData[class_]);
@@ -291,9 +289,16 @@ void VocabBuilder::createTrainingData(){
 
 }
 
+string VocabBuilder::getBestResult(map<string, float> results) {
+  auto minVal = *min_element(results.begin(), results.end(), [](const pair<string, float> &left, const pair<string, float> &right) {
+    return left.second < right.second;
+  });
+  return minVal.first;
+}
+
 //Figure out how to get label strings saved out
 
-void VocabBuilder::testSVM() {
+void VocabBuilder::testSVM(float sampleLength) {
 
     //Set up BOW Descriptor Extractor
     vector<KeyPoint> keypoints;
@@ -320,7 +325,11 @@ void VocabBuilder::testSVM() {
       sox_signalinfo_t signalInfo = input->signal;
       sox_rate_t sampleRate = signalInfo.rate;
       sox_uint64_t length = signalInfo.length;
-      size_t sampleSize = (sampleRate * period);
+      size_t sampleSize = (sampleLength > 1.0) ? (sampleRate * period) * sampleLength : (sampleRate * period) / (1.0f / sampleLength);
+      map<string, float> resultsCount;
+      for (map<string, string>::iterator iterator = classLabelMappings.begin(); iterator != classLabelMappings.end(); ++iterator){
+        resultsCount[(*iterator).first] = 0.0f;
+      }
 
       size_t samplesTrimmed = 0;
 
@@ -345,19 +354,17 @@ void VocabBuilder::testSVM() {
 
         featureDetector->detect(frame, keypoints);
         bowExtractor->compute(frame, keypoints, responseHist);
-        cout << "POS :" << samplesTrimmed << endl;
         for (map<string, string>::iterator iterator = classLabelMappings.begin(); iterator != classLabelMappings.end(); ++iterator){
             string className = (*iterator).first;
             const char* svmPath = (*iterator).second.c_str();
             Ptr<SVM> svm = Algorithm::load<SVM>(svmPath);
             Mat results;
             int result = svm->predict(responseHist, results, true);
-
-            cout << "Class: " << className << " Result : " << result << ' ' << results.at<float>(0,0) << endl;
-
+            resultsCount[className] += results.at<float>(0,0);
         }
         //writer.write(frame);
       }
+      cout << "Best Guess: " << VocabBuilder::getBestResult(resultsCount) << endl;
       sox_close(input);
       //writer.release();
     }

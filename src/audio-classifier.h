@@ -108,6 +108,7 @@ extern "C" {
   }
 
   bool initSox() {
+    sox_globals.verbosity = 0;
     if (sox_init() == SOX_SUCCESS && sox_format_init() == SOX_SUCCESS) {
       return true;
     }
@@ -162,13 +163,13 @@ class VocabBuilder {
         static vector<string> getTestFiles(string filePath);
         static void getSpectrogram(string filePath);
         static int trainingSetFromAudio(string audioFile, string outFolder, float sampleLength);
-
+        static string getBestResult(map<string, float>);
         //Non-static
         void listFiles(string directory);
         void createVocab();
         void vocab2File();
         void SVM2File();
-        void testSVM();
+        void testSVM(float sampleLength);
         void createTrainingData();
         void loadVocabFile(FileStorage vocabFile);
 

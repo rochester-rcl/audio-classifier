@@ -20,6 +20,7 @@ int main(int argc, const char* argv[]) {
     ("output_vocab,ov", value<string>(), "Output vocabulary file")
     ("output,o", value<string>(), "Output directory")
     ("svm,s", value<string>(), "SVM file")
+    ("sample_length,sl", value<float>(), "Sample length in seconds")
     ("labels,l", value<string>(), "Labels file");
 
 
@@ -44,16 +45,17 @@ int main(int argc, const char* argv[]) {
         cerr << description << endl;
         return 1;
     }
-    if (variables.count("labels") && variables.count("vocab") && variables.count("input") && variables.count("output")) {
+    if (variables.count("labels") && variables.count("vocab") && variables.count("input") && variables.count("output") && variables.count("sample_length")) {
 
         string inputFile = variables["input"].as<string>();
         string outputDir = variables["output"].as<string>();
         string labels = variables["labels"].as<string>();
         string vocabFile = variables["vocab"].as<string>();
+        float sampleLength = variables["sample_length"].as<float>();
         FileStorage inputVocab(vocabFile, FileStorage::READ);
         cout << "Reading " << vocabFile << endl;
         VocabBuilder vocab(labels, inputVocab, outputDir, inputFile);
-        vocab.testSVM();
+        vocab.testSVM(sampleLength);
 
     } else {
         cout << "Incorrect arguments set. Please run audio-classifier --help for assistance" << endl;
